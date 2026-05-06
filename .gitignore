@@ -32,8 +32,11 @@ checkpoints/*.h5
 checkpoints/*.npz
 checkpoints/*.weights.h5
 checkpoints/*.pkl
+checkpoints/itu_materials
 checkpoints/itu_materials/
+checkpoints/learned_materials
 checkpoints/learned_materials/
+checkpoints/neural_materials
 checkpoints/neural_materials/
 
 # Tensorboard logs from training notebooks
