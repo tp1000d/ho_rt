@@ -2,11 +2,18 @@
 *.sif
 *.sif.bak
 horp.sif
+*.sif.tmp
 
-# Logs & SLURM outputs
+# Singularity / Apptainer caches built next to the def
+.singularity.d/
+sandbox/
+.apptainer/
+
+# SLURM logs & per-job outputs
 logs/
 *.out
 *.err
+*.log
 
 # Python build leftovers
 __pycache__/
@@ -14,16 +21,24 @@ __pycache__/
 *.egg-info/
 .ipynb_checkpoints/
 
-# Datasets — populated at runtime by sbatch jobs
+# Datasets (populated at runtime by sbatch jobs; large)
 data/tfrecords/*.tfrecords
 data/traced_paths/*.tfrecords
 data/traced_paths/*.json
+*.parts/
 
-# Trained weights — regenerable
+# Trained weights (regenerable, large)
 checkpoints/*.h5
 checkpoints/*.npz
+checkpoints/*.weights.h5
 
-# Editor / OS
+# Notebook execution side effects
+*.ipynb_checkpoints
+notebooks/*.html
+
+# Editor / OS noise
 .DS_Store
 .vscode/
 .idea/
+*.swp
+*~

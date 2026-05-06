@@ -16,7 +16,12 @@ From: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
     compat/apply_sionna_patches.py /opt/compat/apply_sionna_patches.py
 
 %post
-    set -eux
+    # `-e` aborts the build on any failure (we want a build to either fully
+    #     succeed or fail loudly, not produce a broken image silently).
+    # `-x` echoes every command so the build log shows exactly what ran
+    #     (no hidden behavior).
+    # `-u` is intentionally NOT set; some apt/pip helpers reference unset vars.
+    set -ex
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y --no-install-recommends \
