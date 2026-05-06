@@ -25,7 +25,7 @@ PROJECT=${PROJECT:-/scratch/$USER/ho_rt}
 OVERLAY=${OVERLAY:-${PROJECT}/horp-overlay.ext3}
 SIF=${SIF:-/share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif}
 
-mkdir -p "${PROJECT}/logs"
+mkdir -p "${PROJECT}/logs" "${PROJECT}/data/traced_paths"
 
 if [ ! -f "${OVERLAY}" ]; then
     echo "FAIL: overlay missing at ${OVERLAY} — run setup_overlay.sbatch first"
