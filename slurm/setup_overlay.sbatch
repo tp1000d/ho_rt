@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=horp_setup_overlay
 #SBATCH --account=torch_pr_100_tandon_advanced
+#SBATCH --partition=cpu_short
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8

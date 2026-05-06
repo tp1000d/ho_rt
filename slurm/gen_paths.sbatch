@@ -7,15 +7,16 @@
 #SBATCH --gres=gpu:h200:1
 #SBATCH --mem=64GB
 #SBATCH --time=04:00:00
-#SBATCH --array=0-3%4
+#SBATCH --array=0-1%2
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=xw3824@nyu.edu
-# Array job: shard the 10000-sample path generation across 4 H200 GPUs.
-# 4 shards x 2500 samples each. To scale to N GPUs, change SHARDS and the
-# `--array=0-(N-1)%N` line.
+# Array job: shard the 10000-sample path generation across H200 GPUs.
+# 2 shards x 5000 samples each — matches the per-account QoS cap of 2
+# concurrent H200s on torch (`torch_pr_100_tandon_advanced`). To scale to
+# N GPUs (if your QoS allows), change SHARDS and `--array=0-(N-1)%N`.
 
-SHARDS=4
+SHARDS=2
 TOTAL=10000
 PER_SHARD=$(( TOTAL / SHARDS ))
 SKIP=$(( SLURM_ARRAY_TASK_ID * PER_SHARD ))
