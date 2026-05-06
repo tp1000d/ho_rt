@@ -3,16 +3,21 @@ Apply the Sionna 0.18 + DrJit 1.x compat patches to a freshly installed env.
 
 Run this ONCE inside the Singularity container after `pip install sionna==0.18.0
 drjit==1.3.1 mitsuba==3.8.0` so that the source files are patched in place.
-The container build job calls it automatically (see Singularity.def).
+The setup_overlay sbatch invokes it automatically.
 
 Patches:
   1. Drop `_drjit1x_compat.py` next to `sionna/rt/__init__.py` and import it.
+     The shim itself fixes:
+       - dr.reinterpret_array_v -> dr.reinterpret_array alias.
+       - mi_to_tf_tensor: (C,N) -> (N,C) layout, bool DLPack via UInt8.
+       - Scene.compute_fields: accept legacy 6-arg call, inject empty RIS
+         placeholders (8-arg API was added in Sionna 0.18 with RIS support).
   2. Wrap (N, C) -> (C, N) layout-sensitive constructor call sites with
      `_ls(...)` from `sionna.rt.utils`.
   3. Replace mi.Color0f(0.) with mi.Color0f().
   4. Cast `prims_i` sentinel to Int32 so `-1` doesn't fail UInt promotion.
-  5. Patch `mi_to_tf_tensor` to transpose (C, N) back to (N, C) and route
-     bool tensors through UInt8 (TF DLPack lacks bool support).
+  5. Patch `mi_to_tf_tensor` source to mirror the runtime shim (so it works
+     even when the shim is bypassed).
 """
 import re
 import shutil
