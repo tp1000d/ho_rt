@@ -41,7 +41,14 @@ nvidia-smi --query-gpu=name,memory.total --format=csv
 
 cd "${PROJECT}" || { echo "FAIL: cd ${PROJECT}"; exit 1; }
 
-apptainer exec --nv --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
+module purge
+module load singularity-ce/4.3.3 2>/dev/null
+if ! command -v singularity >/dev/null 2>&1; then
+    echo "FAIL: singularity not in PATH after 'module load singularity-ce/4.3.3'"
+    exit 1
+fi
+
+singularity exec --nv --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
     source /ext3/env.sh
     cd ${PROJECT}/code
     python gen_dataset.py \

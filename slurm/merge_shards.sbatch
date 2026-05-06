@@ -37,10 +37,17 @@ echo "Merging ${#SHARDS[@]} shards: ${SHARDS[*]}"
 cat "${SHARDS[@]}" > dichasus-dc01.tfrecords
 ls -la dichasus-dc01.tfrecords
 
+module purge
+module load singularity-ce/4.3.3 2>/dev/null
+if ! command -v singularity >/dev/null 2>&1; then
+    echo "FAIL: singularity not in PATH"
+    exit 1
+fi
+
 # Use the overlay's python so json/tf are both available. (Python in the
 # overlay is the same one used to write these files, ensuring consistent JSON
 # semantics.)
-apptainer exec --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c '
+singularity exec --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c '
     source /ext3/env.sh
     cd '"${PROJECT}/data/traced_paths"'
     python - <<PY

@@ -10,30 +10,36 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=xw3824@nyu.edu
 # Build a writable ext3 overlay with Miniconda + the Sionna 0.18 / drjit 1.x
-# stack and apply the in-source compat patches.
-#
-# Layout:
-#   $OVERLAY   /scratch/$USER/ho_rt/horp-overlay.ext3   (writable)
-#   $SIF       /share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif
+# stack and apply the in-source compat patches. CPU-only.
 #
 # After this job succeeds, all subsequent jobs mount the overlay ":ro".
 
 PROJECT=${PROJECT:-/scratch/$USER/ho_rt}
 OVERLAY=${OVERLAY:-${PROJECT}/horp-overlay.ext3}
 SIF=${SIF:-/share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif}
-TEMPLATE=${TEMPLATE:-/scratch/work/public/overlay-15GB-500K.ext3.gz}
+TEMPLATE=${TEMPLATE:-/share/apps/overlay-fs-ext3/overlay-15GB-500K.ext3.gz}
 
 mkdir -p "${PROJECT}/logs"
 cd "${PROJECT}" || { echo "FAIL: cd ${PROJECT}"; exit 1; }
 
-# Sanity checks
+module purge
+module load singularity-ce/4.3.3 2>/dev/null
+if ! command -v singularity >/dev/null 2>&1; then
+    echo "FAIL: 'singularity' still not in PATH after 'module load singularity-ce/4.3.3'"
+    echo "Available singularity-ce modules:"
+    module avail singularity 2>&1
+    exit 1
+fi
+echo "Using $(singularity --version)"
+
 if [ ! -f "${SIF}" ]; then
     echo "FAIL: SIF not found at ${SIF}"
     exit 1
 fi
 if [ ! -f "${TEMPLATE}" ]; then
     echo "FAIL: overlay template not found at ${TEMPLATE}"
-    echo "Browse /scratch/work/public/overlay-fs-ext3/ for available sizes."
+    echo "Available templates in /share/apps/overlay-fs-ext3/:"
+    ls /share/apps/overlay-fs-ext3/ 2>&1 | head -20
     exit 1
 fi
 
@@ -47,9 +53,9 @@ else
     echo "Overlay already present at ${OVERLAY}; will install on top."
 fi
 
-# Run the install script inside the overlay (apptainer mounts overlay :rw)
+# Run the install inside the overlay (mounted :rw via --fakeroot)
 echo "Installing miniconda + Sionna 0.18 + drjit 1.x into overlay..."
-apptainer exec --overlay "${OVERLAY}":rw "${SIF}" /bin/bash <<'INSTALL'
+singularity exec --fakeroot --overlay "${OVERLAY}":rw "${SIF}" /bin/bash <<'INSTALL'
 set -ex
 # Bootstrap miniconda inside the overlay if missing.
 if [ ! -d /ext3/miniconda3 ]; then
@@ -89,7 +95,7 @@ fi
 
 # Apply Sionna 0.18 in-source patches (idempotent — re-running is safe)
 echo "Applying Sionna 0.18 compat patches..."
-apptainer exec --overlay "${OVERLAY}":rw "${SIF}" /bin/bash -c "
+singularity exec --fakeroot --overlay "${OVERLAY}":rw "${SIF}" /bin/bash -c "
     source /ext3/env.sh
     python ${PROJECT}/compat/apply_sionna_patches.py
 "
@@ -101,7 +107,7 @@ fi
 
 # Sanity: imports
 echo "Sanity check..."
-apptainer exec --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
+singularity exec --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
     source /ext3/env.sh
     python -c 'import tensorflow as tf, sionna, sionna.rt, mitsuba as mi, drjit as dr; print(\"TF\", tf.__version__, \"Sionna\", sionna.__version__, \"Mitsuba\", mi.__version__, \"DrJit\", dr.__version__)'
 "
