@@ -55,7 +55,7 @@ fi
 
 # Run the install inside the overlay (mounted :rw via --fakeroot)
 echo "Installing miniconda + Sionna 0.18 + drjit 1.x into overlay..."
-singularity exec --fakeroot --overlay "${OVERLAY}":rw "${SIF}" /bin/bash <<'INSTALL'
+singularity exec --overlay "${OVERLAY}":rw "${SIF}" /bin/bash <<'INSTALL'
 set -ex
 # Bootstrap miniconda inside the overlay if missing.
 if [ ! -d /ext3/miniconda3 ]; then
@@ -95,7 +95,7 @@ fi
 
 # Apply Sionna 0.18 in-source patches (idempotent — re-running is safe)
 echo "Applying Sionna 0.18 compat patches..."
-singularity exec --fakeroot --overlay "${OVERLAY}":rw "${SIF}" /bin/bash -c "
+singularity exec --overlay "${OVERLAY}":rw "${SIF}" /bin/bash -c "
     source /ext3/env.sh
     python ${PROJECT}/compat/apply_sionna_patches.py
 "
