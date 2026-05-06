@@ -1,0 +1,29 @@
+# Generated artifacts (large, regenerable)
+*.sif
+*.sif.bak
+horp.sif
+
+# Logs & SLURM outputs
+logs/
+*.out
+*.err
+
+# Python build leftovers
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Datasets — populated at runtime by sbatch jobs
+data/tfrecords/*.tfrecords
+data/traced_paths/*.tfrecords
+data/traced_paths/*.json
+
+# Trained weights — regenerable
+checkpoints/*.h5
+checkpoints/*.npz
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
