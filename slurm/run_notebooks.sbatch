@@ -1,44 +1,31 @@
 #!/bin/bash
 #SBATCH --job-name=horp_train
+#SBATCH --account=torch_pr_100_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:h200:1
-#SBATCH --mem=96G
+#SBATCH --mem=96GB
 #SBATCH --time=08:00:00
-#SBATCH --output=logs/train_%j.out
-#SBATCH --error=logs/train_%j.err
-# Execute all training/evaluation notebooks of diff-rt-calibration headlessly.
-# Section IV-B: synthetic-data result, no DICHASUS data needed.
-# Sections IV-C: ITU / Learned / Neural Materials trainings.
-# Figures: CDFs, Heat_Maps, CIRs.
-#
-# No `set -e` — each notebook is run independently. If one fails the script
-# logs it and continues (so you don't lose later figures because an earlier
-# notebook had a transient error). Exit code reflects the worst notebook.
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=xw3824@nyu.edu
+# Execute all paper notebooks headlessly.
+# Section IV-B: Synthetic_Data (no DICHASUS data needed)
+# Section IV-C: ITU_Materials, Learned_Materials, Neural_Materials
+# Figures: CDFs, Heat_Maps, CIRs
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-REPO_ROOT=$( cd -- "${SCRIPT_DIR}/.." &> /dev/null && pwd )
-mkdir -p "${REPO_ROOT}/logs"
+PROJECT=${PROJECT:-/scratch/$USER/ho_rt}
+OVERLAY=${OVERLAY:-${PROJECT}/horp-overlay.ext3}
+SIF=${SIF:-/share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif}
 
-SINGULARITY=""
-if command -v apptainer >/dev/null 2>&1; then SINGULARITY=apptainer
-elif command -v singularity >/dev/null 2>&1; then SINGULARITY=singularity
-else
-    module load apptainer 2>/dev/null
-    module load singularity 2>/dev/null
-    SINGULARITY=$(command -v apptainer || command -v singularity)
-fi
-if [ -z "${SINGULARITY}" ]; then
-    echo "FAIL: no apptainer or singularity available"
+mkdir -p "${PROJECT}/logs"
+cd "${PROJECT}" || { echo "FAIL: cd ${PROJECT}"; exit 1; }
+
+if [ ! -f "${OVERLAY}" ]; then
+    echo "FAIL: overlay missing at ${OVERLAY}"
     exit 1
 fi
-if [ ! -f "${REPO_ROOT}/horp.sif" ]; then
-    echo "FAIL: ${REPO_ROOT}/horp.sif not built yet"
-    exit 1
-fi
-
-cd "${REPO_ROOT}" || { echo "FAIL: cd ${REPO_ROOT}"; exit 1; }
 
 NOTEBOOKS=(
     notebooks/Synthetic_Data.ipynb
@@ -57,12 +44,13 @@ for nb in "${NOTEBOOKS[@]}"; do
         continue
     fi
     echo "=== Executing ${nb} ==="
-    ${SINGULARITY} exec --nv \
-        -B "${REPO_ROOT}":"${REPO_ROOT}" \
-        "${REPO_ROOT}/horp.sif" \
+    apptainer exec --nv --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
+        source /ext3/env.sh
+        cd ${PROJECT}
         jupyter nbconvert --to notebook --execute --inplace \
             --ExecutePreprocessor.timeout=14400 \
-            "${nb}"
+            '${nb}'
+    "
     rc=$?
     if [ ${rc} -ne 0 ]; then
         echo "FAIL: ${nb} exited with ${rc} (continuing with the rest)"

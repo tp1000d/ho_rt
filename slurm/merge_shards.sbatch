@@ -1,27 +1,24 @@
 #!/bin/bash
 #SBATCH --job-name=horp_merge
+#SBATCH --account=torch_pr_100_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=8G
+#SBATCH --mem=8GB
 #SBATCH --time=00:30:00
-#SBATCH --output=logs/merge_%j.out
-#SBATCH --error=logs/merge_%j.err
-# Concatenate the per-shard tfrecords into the single
-# data/traced_paths/dichasus-dc01.tfrecords that the reproduction notebooks
-# expect. Also merges the per-shard JSON metadata, taking max() over the
-# `max_num_paths_*` fields (correctness-critical: the dataset must use one
-# consistent padding width).
-#
-# No `set -e` — explicit checks so failures are loud.
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=xw3824@nyu.edu
+# Concatenate per-shard tfrecords into the single
+#   data/traced_paths/dichasus-dc01.tfrecords
+# that the reproduction notebooks expect, and merge per-shard JSON metadata
+# (taking max() over the `max_num_paths_*` fields — correctness-critical).
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-REPO_ROOT=$( cd -- "${SCRIPT_DIR}/.." &> /dev/null && pwd )
+PROJECT=${PROJECT:-/scratch/$USER/ho_rt}
+OVERLAY=${OVERLAY:-${PROJECT}/horp-overlay.ext3}
+SIF=${SIF:-/share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif}
 
-cd "${REPO_ROOT}/data/traced_paths" || { echo "FAIL: cd data/traced_paths"; exit 1; }
-
-OUT="dichasus-dc01.tfrecords"
-OUT_JSON="dichasus-dc01.json"
+cd "${PROJECT}/data/traced_paths" || { echo "FAIL: cd data/traced_paths"; exit 1; }
 
 shopt -s nullglob
 SHARDS=( dichasus-dc01-*.tfrecords )
@@ -37,11 +34,17 @@ if [ ${#JSONS[@]} -ne ${#SHARDS[@]} ]; then
 fi
 
 echo "Merging ${#SHARDS[@]} shards: ${SHARDS[*]}"
-cat "${SHARDS[@]}" > "${OUT}"
-ls -la "${OUT}"
+cat "${SHARDS[@]}" > dichasus-dc01.tfrecords
+ls -la dichasus-dc01.tfrecords
 
-python - <<'PY'
-import json, glob, os, sys
+# Use the overlay's python so json/tf are both available. (Python in the
+# overlay is the same one used to write these files, ensuring consistent JSON
+# semantics.)
+apptainer exec --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c '
+    source /ext3/env.sh
+    cd '"${PROJECT}/data/traced_paths"'
+    python - <<PY
+import json, glob
 shards = sorted(glob.glob("dichasus-dc01-*.json"))
 print("shards:", shards)
 agg = None
@@ -61,6 +64,7 @@ with open("dichasus-dc01.json", "w") as f:
     json.dump(agg, f, indent=2)
 print("wrote dichasus-dc01.json:", agg)
 PY
+'
 rc=$?
 if [ ${rc} -ne 0 ]; then
     echo "FAIL: JSON merge step exited with ${rc}"

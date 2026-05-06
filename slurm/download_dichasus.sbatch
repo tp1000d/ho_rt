@@ -1,26 +1,24 @@
 #!/bin/bash
 #SBATCH --job-name=horp_download
+#SBATCH --account=torch_pr_100_tandon_advanced
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=8G
+#SBATCH --mem=8GB
 #SBATCH --time=02:00:00
-#SBATCH --output=logs/download_%j.out
-#SBATCH --error=logs/download_%j.err
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=xw3824@nyu.edu
 # Download dichasus-dc01.tfrecords (16.87 GB) on a CPU node using
 # 16-stream parallel byte-range curl. dc01 is the only DICHASUS file the
 # diff-rt-calibration paper uses.
-#
-# No `set -e` — explicit checks so failures are loud.
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-REPO_ROOT=$( cd -- "${SCRIPT_DIR}/.." &> /dev/null && pwd )
-
-DEST="${REPO_ROOT}/data/tfrecords"
+PROJECT=${PROJECT:-/scratch/$USER/ho_rt}
+DEST="${PROJECT}/data/tfrecords"
 OUT="${DEST}/dichasus-dc01.tfrecords"
 SIZE=16870531926
 CHUNKS=16
-mkdir -p "${DEST}" "${REPO_ROOT}/logs"
+mkdir -p "${DEST}" "${PROJECT}/logs"
 
 if [ -f "${OUT}" ] && [ "$(stat -c%s "${OUT}")" = "${SIZE}" ]; then
     echo "Already complete: ${OUT}"
