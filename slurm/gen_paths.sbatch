@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:h200:1
 #SBATCH --mem=64GB
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --array=0-1%2
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --mail-type=END,FAIL
@@ -49,7 +49,16 @@ if ! command -v singularity >/dev/null 2>&1; then
     exit 1
 fi
 
+# DrJit's OptiX kernel cache writes to $HOME/.drjit/optix7cache.db. Inside the
+# singularity container $HOME isn't always writable on torch compute nodes
+# (e.g. when /home isn't bind-mounted), so the job dies at startup with
+# OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR (7012). Point HOME at a writable
+# scratch location so the cache can be created.
+DRJIT_HOME="${PROJECT}/.drjit_home_${SLURM_ARRAY_TASK_ID}"
+mkdir -p "${DRJIT_HOME}/.drjit"
+
 singularity exec --nv --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
+    export HOME='${DRJIT_HOME}'
     source /ext3/env.sh
     cd ${PROJECT}/code
     python gen_dataset.py \

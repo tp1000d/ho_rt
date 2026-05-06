@@ -31,10 +31,25 @@ data/traced_paths/*.json
 checkpoints/*.h5
 checkpoints/*.npz
 checkpoints/*.weights.h5
+checkpoints/*.pkl
+checkpoints/itu_materials/
+checkpoints/learned_materials/
+checkpoints/neural_materials/
+
+# Tensorboard logs from training notebooks
+tb_logs/
 
 # Notebook execution side effects
 *.ipynb_checkpoints
 notebooks/*.html
+notebooks/*.executed.ipynb
+
+# Run-time training output artifacts
+results/synthetic/*.pdf
+results/measurements/*.pdf
+results/**/train_dict.pkl
+results/**/*.pkl
+results/**/*.npz
 
 # Editor / OS noise
 .DS_Store
@@ -43,3 +58,7 @@ notebooks/*.html
 *.swp
 *~
 *.pdf
+
+# Per-job DrJit cache homes (created at runtime to work around
+# host $HOME being read-only inside singularity on torch)
+.drjit_home_*/

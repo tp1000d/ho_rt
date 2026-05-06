@@ -50,8 +50,14 @@ for nb in "${NOTEBOOKS[@]}"; do
         echo "MISSING ${nb}, skipping"
         continue
     fi
+    # DrJit OptiX cache wants a writable $HOME/.drjit; the bind-mounted host
+    # home isn't always writable inside the container on torch.
+    DRJIT_HOME="${PROJECT}/.drjit_home_nb"
+    mkdir -p "${DRJIT_HOME}/.drjit"
+
     echo "=== Executing ${nb} ==="
     singularity exec --nv --overlay "${OVERLAY}":ro "${SIF}" /bin/bash -c "
+        export HOME='${DRJIT_HOME}'
         source /ext3/env.sh
         cd ${PROJECT}
         jupyter nbconvert --to notebook --execute --inplace \
