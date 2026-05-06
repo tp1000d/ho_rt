@@ -21,7 +21,7 @@
 PROJECT=${PROJECT:-/scratch/$USER/ho_rt}
 OVERLAY=${OVERLAY:-${PROJECT}/horp-overlay.ext3}
 SIF=${SIF:-/share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif}
-TEMPLATE=${TEMPLATE:-/scratch/work/public/overlay-fs-ext3/overlay-15GB-500K.ext3.gz}
+TEMPLATE=${TEMPLATE:-/scratch/work/public/overlay-15GB-500K.ext3.gz}
 
 mkdir -p "${PROJECT}/logs"
 cd "${PROJECT}" || { echo "FAIL: cd ${PROJECT}"; exit 1; }

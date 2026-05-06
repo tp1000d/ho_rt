@@ -31,7 +31,7 @@ ho_rt/
 |---|---|
 | Account | `torch_pr_100_tandon_advanced` |
 | Container image | `/share/apps/images/cuda12.6.3-cudnn9.5.1-ubuntu22.04.5.sif` |
-| Overlay template | `/scratch/work/public/overlay-fs-ext3/overlay-15GB-500K.ext3.gz` |
+| Overlay template | `/scratch/work/public/overlay-15GB-500K.ext3.gz` |
 | Project dir | `/scratch/$USER/ho_rt` |
 | Overlay path | `/scratch/$USER/ho_rt/horp-overlay.ext3` |
 | GPU (where applicable) | `--gres=gpu:h200:1` |
